@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "212579021842",
+    "project_id": "nabtati-cb3a1",
+    "storage_bucket": "nabtati-cb3a1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:212579021842:android:68aa2d56ea56a8d22554cb",
+        "android_client_info": {
+          "package_name": "com.example.nabtati"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "212579021842-2spqstbimklljgo8i3hs38r2huuc6kuv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.nabtati",
+            "certificate_hash": "d12d1a3fe220f652dff0725bfa837d95b43eed97"
+          }
+        },
+        {
+          "client_id": "212579021842-5cagv29uuf4t5q5t9011k8kb2fivlcin.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDOc6uZGuPD1JObnlZcyfVJdmJCJ04DnSE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "212579021842-5cagv29uuf4t5q5t9011k8kb2fivlcin.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "212579021842-60tukcji8retd439d699depq10mdmehe.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.nabtati"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
