@@ -5,10 +5,7 @@ import 'plant_model.dart';
 class PlantDesign extends StatefulWidget {
   final Plant plant;
 
-  const PlantDesign({
-    super.key,
-    required this.plant,
-  });
+  const PlantDesign({super.key, required this.plant});
 
   @override
   State<PlantDesign> createState() => _PlantDesignState();
@@ -60,7 +57,7 @@ class _PlantDesignState extends State<PlantDesign> {
             Text(
               plant.name,
               style: const TextStyle(
-                fontSize: 34,
+                fontSize: 32,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -71,7 +68,7 @@ class _PlantDesignState extends State<PlantDesign> {
             Text(
               plant.category,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 14,
                 color: Colors.grey.shade600,
                 fontWeight: FontWeight.w500,
               ),
@@ -82,18 +79,13 @@ class _PlantDesignState extends State<PlantDesign> {
             // ================= DESCRIPTION =================
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: Text(
-                plant.description,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  height: 1.7,
-                  color: Colors.black87,
-                ),
+              child: ExpandableText(
+                text: plant.description,
+                maxLines: 3,
               ),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 25),
 
             // ================= ADD BUTTON =================
             ElevatedButton.icon(
@@ -116,69 +108,66 @@ class _PlantDesignState extends State<PlantDesign> {
 
             const SizedBox(height: 30),
 
-            // ================= INFO CARDS (COMMENTED) =================
-            /*
-            Row(
-              children: [
-                infoCard(...),
-                infoCard(...),
-                infoCard(...),
-              ],
-            ),
-            */
-
-            // ================= EXPANDABLE SECTIONS =================
+            // ================= INFO CARDS =================
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
 
-                  expandableCard(
+                  InfoCard(
                     title: "فوائد النبتة",
                     content: plant.benefits,
-                    icon: Icons.favorite_border,
+                    icon: Icons.favorite,
+                    iconColor: Colors.redAccent,
                   ),
 
-                  expandableCard(
+                  InfoCard(
                     title: "الزراعة",
                     content: plant.planting,
                     icon: Icons.grass,
+                    iconColor: Colors.green,
                   ),
 
-                  expandableCard(
+                  InfoCard(
                     title: "التقليم والحصاد",
                     content: plant.pruningHarvest,
                     icon: Icons.content_cut,
+                    iconColor: Colors.brown,
                   ),
 
-                  expandableCard(
+                  InfoCard(
                     title: "التربة",
                     content: plant.soil,
                     icon: Icons.terrain,
+                    iconColor: Colors.orange,
                   ),
 
-                  expandableCard(
+                  InfoCard(
                     title: "الضوء",
                     content: plant.sunlight,
                     icon: Icons.wb_sunny_rounded,
+                    iconColor: Colors.yellow.shade700,
                   ),
 
-                  expandableCard(
+                  InfoCard(
                     title: "التسميد",
                     content: plant.tasmeed,
                     icon: Icons.local_florist,
+                    iconColor: Colors.green.shade700,
                   ),
 
-                  expandableCard(
+                  InfoCard(
                     title: "الحرارة",
                     content: plant.temperature,
                     icon: Icons.thermostat_rounded,
+                    iconColor: Colors.red.shade400,
                   ),
 
-                  expandableCard(
+                  InfoCard(
                     title: "المياه",
                     content: plant.water,
                     icon: Icons.water_drop_rounded,
+                    iconColor: Colors.blue,
                   ),
                 ],
               ),
@@ -188,44 +177,122 @@ class _PlantDesignState extends State<PlantDesign> {
       ),
     );
   }
+}
 
-  // ================= EXPANDABLE CARD =================
-  Widget expandableCard({
-    required String title,
-    required String content,
-    required IconData icon,
-  }) {
+// ========================= INFO CARD =========================
+class InfoCard extends StatefulWidget {
+  final String title;
+  final String content;
+  final IconData icon;
+  final Color iconColor;
+
+  const InfoCard({
+    super.key,
+    required this.title,
+    required this.content,
+    required this.icon,
+    required this.iconColor,
+  });
+
+  @override
+  State<InfoCard> createState() => _InfoCardState();
+}
+
+class _InfoCardState extends State<InfoCard> {
+  bool isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
+            blurRadius: 6,
             offset: const Offset(0, 3),
           ),
         ],
       ),
       child: ExpansionTile(
-        leading: Icon(icon, size: 28),
+        initiallyExpanded: false,
+        leading: Icon(widget.icon, color: widget.iconColor, size: 26),
         title: Text(
-          title,
+          widget.title,
           style: const TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 18,
-          ),
+              fontWeight: FontWeight.bold, fontSize: 17),
         ),
         childrenPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         children: [
-          Text(
-            content,
-            style: const TextStyle(fontSize: 15, height: 1.8),
+          ExpandableText(
+            text: widget.content,
+            maxLines: 3,
           ),
         ],
       ),
     );
+  }
+}
+
+// ========================= EXPANDABLE TEXT =========================
+class ExpandableText extends StatefulWidget {
+  final String text;
+  final int maxLines;
+
+  const ExpandableText({super.key, required this.text, this.maxLines = 3});
+
+  @override
+  State<ExpandableText> createState() => _ExpandableTextState();
+}
+
+class _ExpandableTextState extends State<ExpandableText> {
+  bool isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final span = TextSpan(
+      text: widget.text,
+      style: const TextStyle(fontSize: 15, height: 1.6, color: Colors.black87),
+    );
+
+    return LayoutBuilder(builder: (context, size) {
+      final painter = TextPainter(
+        maxLines: widget.maxLines,
+        textAlign: TextAlign.start,
+        textDirection: TextDirection.ltr,
+        text: span,
+      )..layout(maxWidth: size.maxWidth);
+
+      final exceeded = painter.didExceedMaxLines;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.text,
+            maxLines: isExpanded ? null : widget.maxLines,
+            overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 15, height: 1.6, color: Colors.black87),
+          ),
+          if (exceeded)
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  isExpanded = !isExpanded;
+                });
+              },
+              child: Text(
+                isExpanded ? "اقرأ أقل" : "اقرأ المزيد",
+                style: TextStyle(
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+        ],
+      );
+    });
   }
 }
