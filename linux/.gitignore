@@ -1,1 +1,38 @@
 flutter/ephemeral
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub/
+build/
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# iOS
+ios/Pods/
+ios/Runner.xcworkspace/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/ServiceDefinitions.json
+ios/Flutter/App.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+
+# Android
+android/.gradle/
+android/app/build/
+android/local.properties
+
+# Generated files
+*.lock
+*.log
+
+# Other
+*.swp
+*.DS_Store
+*.tmp
