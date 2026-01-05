@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'plant_model.dart';
+import 'garden_service.dart';
 
 class PlantDesign extends StatefulWidget {
   final Plant plant;
@@ -89,7 +90,23 @@ class _PlantDesignState extends State<PlantDesign> {
 
             // ================= ADD BUTTON =================
             ElevatedButton.icon(
-              onPressed: () {},
+             onPressed: () async {
+              try {
+                await GardenService().addPlantToGarden(plant);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("🌱 تمت إضافة النبتة إلى حديقتك"),
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("❌ خطأ: ${e.toString()}"),
+                  ),
+                );
+              }
+            },
               icon: const Icon(Icons.add_circle_outline,
                   color: Color.fromARGB(255, 36, 200, 21)),
               label: const Text(

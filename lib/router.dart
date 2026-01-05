@@ -8,11 +8,11 @@ import 'auth/loginPage.dart';
 import 'auth/registerPage.dart';
 import 'homePage.dart';
 
-import 'mygarden/plants_page.dart';
+import 'plants_page.dart';
 import 'mygarden/plant_details_page.dart';
 
 import 'plant_model.dart';
-import 'mygarden/garden.dart';
+import 'garden.dart';
 import 'mygarden/edit_plant_page.dart';
 
 import 'community/community_page.dart';
@@ -53,16 +53,15 @@ final GoRouter appRouter = GoRouter(
           path: '/home',
           builder: (context, state) =>  HomeContent(),
         ),
-       /* GoRoute(
+        GoRoute(
           path: '/garden',
           builder: (context, state) => const Garden(),
         ),
-        */
+        
         GoRoute(
           path: '/community',
           builder: (context, state) => const CommunityPage(),
         ),
-        ///////////////////////////////////////////////
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfilePage(),
