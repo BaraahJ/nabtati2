@@ -1,15 +1,19 @@
-
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
-import 'auth/auth_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-
+import 'auth/auth_service.dart';
+import 'user_service.dart';
+import 'user_model.dart';
+import 'cloudinary_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -18,395 +22,427 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
-
+class _ProfilePageState extends State<ProfilePage>
+    with SingleTickerProviderStateMixin {
   final AuthService _authService = AuthService();
-  //////////////////////////////////////////
-void _logout() {
+  final UserService _userService = UserService();
+  final user = FirebaseAuth.instance.currentUser;
+
+  AppUser? appUser;
+
+  bool isUploadingImage = false;
+  String selectedTab = "posts";
+
+  late AnimationController _tabController;
+
+  // lazy loading
+  static const int pageSize = 9;
+  DocumentSnapshot? lastPostDoc;
+  DocumentSnapshot? lastMarketDoc;
+  bool loadingPosts = false;
+  bool loadingMarket = false;
+
+  List<DocumentSnapshot> userPosts = [];
+  List<DocumentSnapshot> marketPosts = [];
+
+  final adminEmail = "admin@example.com";
+
+  // ================= INIT =================
+  @override
+  void initState() {
+    super.initState();
+    _tabController =
+        AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
+    _loadUser();
+    _loadPosts();
+    _loadMarket();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  // ================= LOAD USER =================
+  Future<void> _loadUser() async {
+    if (user == null) return;
+    final data = await _userService.getUser(user!.uid);
+    if (!mounted) return;
+    setState(() => appUser = data);
+  }
+
+  // ================= CLOUDINARY IMAGE =================
+  Future<void> _changeProfileImage() async {
+    if (user == null) return;
+
+    final picked =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
+
+    setState(() => isUploadingImage = true);
+
+    final imageUrl =
+        await CloudinaryService.uploadProfile(File(picked.path));
+
+    await _userService.updatePhoto(
+      uid: user!.uid,
+      photoUrl: imageUrl,
+    );
+
+    await _loadUser();
+    setState(() => isUploadingImage = false);
+  }
+
+  // ================= EDIT PROFILE =================
+  void _openEditProfileDialog() {
+  if (appUser == null) return; // safety check
+
+  final nameController = TextEditingController(text: appUser!.name);
+  final bioController = TextEditingController(text: appUser!.bio);
+
   showDialog(
     context: context,
-    useRootNavigator: true, // 🔥 مهم جدًا
     barrierDismissible: false,
-    builder: (BuildContext dialogContext) {
-      return AlertDialog(
-        title: const Text("تسجيل الخروج"),
-        content: const Text("هل أنت متأكد أنك تريد تسجيل الخروج؟"),
+    builder: (dialogContext) => Directionality(
+      textDirection: TextDirection.rtl,
+      child: AlertDialog(
+        title: const Text("تعديل الملف الشخصي"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: () async {
+                  await _changeProfileImage();
+                  // بعد تغيير الصورة نحدث الـ controllers ونعيد تحميل user
+                  await _loadUser();
+                },
+                child: CircleAvatar(
+                  radius: 45,
+                  backgroundImage: appUser!.photoUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(appUser!.photoUrl)
+                      : null,
+                  child: appUser!.photoUrl.isEmpty
+                      ? const Icon(Icons.camera_alt)
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  hintText: "الاسم",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: bioController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: "البايو",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext, rootNavigator: true).pop();
-              // ✅ يسكر الـ Alert فقط
-            },
+            onPressed: () => Navigator.of(dialogContext).pop(), // فقط يسكر الدايالوق
             child: const Text("إلغاء"),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.of(dialogContext, rootNavigator: true).pop();
-              // يسكر الـ Alert
+              // تحديث الاسم والبايو
+              await _userService.updateNameBio(
+                uid: user!.uid,
+                name: nameController.text.trim(),
+                bio: bioController.text.trim(),
+              );
 
-              await _authService.signOut();
+              await _loadUser(); // refresh
 
-              if (!mounted) return;
-
-              context.go('/login');
-            },
-            child: const Text(
-              "تسجيل الخروج",
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-
-///////////////////////////
-
-  String username = "سوزان";
-  File? profileImage;
-  final adminEmail = "admin@example.com";
-
-  Future<void> _changeProfileImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        profileImage = File(pickedFile.path);
-      });
-    }
-  }
-
-  void _changeUsername() {
-    final controller = TextEditingController(text: username);
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("تغيير الاسم"),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(hintText: "ادخل الاسم الجديد"),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("إلغاء")),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                username = controller.text;
-              });
-              Navigator.pop(context);
+              Navigator.of(dialogContext).pop(); // يغلق الدايالوق فقط
             },
             child: const Text("حفظ"),
           ),
         ],
       ),
-    );
-  }
-
-  // فتح إعدادات التطبيق للإشعارات
-  Future<void> _openAppSettings() async {
-    bool opened = await openAppSettings();
-    if (!opened) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("تعذر فتح إعدادات التطبيق")),
-      );
-    }
-  }
-
-  // إرسال بريد للفيدباك
-  Future<void> _sendFeedback() async {
-    final Uri emailUri = Uri(
-      scheme: 'mailto',
-      path: adminEmail,
-      queryParameters: {'subject': 'Feedback من التطبيق'},
-    );
-    if (await canLaunchUrl(emailUri)) {
-      await launchUrl(emailUri);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("لا يمكن فتح البريد الإلكتروني")),
-      );
-    }
-  }
-
-
-  void _openPrivacyPage() {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPage()));
-  }
-
-
-  void _shareApp() {
-    Share.share('جرب هذا التطبيق الرائع: [ضع رابط التطبيق هنا]');
-  }
-
-void _showSettings() {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true, // مهم
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (_) => Directionality(
-      textDirection: TextDirection.rtl,
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.only(
-            bottom: 20,
-            top: 10,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min, // مهم جداً
-            children: [
-              ListTile(
-                leading: const Icon(Icons.notifications, size: 32),
-                title: const Text("الإشعارات", style: TextStyle(fontSize: 18)),
-                onTap: _openAppSettings,
-              ),
-              ListTile(
-                leading: const Icon(Icons.privacy_tip, size: 32),
-                title: const Text("الخصوصية", style: TextStyle(fontSize: 18)),
-                onTap: _openPrivacyPage,
-              ),
-              ListTile(
-                leading: const Icon(Icons.feedback_outlined, size: 32),
-                title: const Text("فيدباك", style: TextStyle(fontSize: 18)),
-                onTap: _sendFeedback,
-              ),
-              ListTile(
-                leading: const Icon(Icons.share, size: 32),
-                title: const Text("أخبر أصدقائك", style: TextStyle(fontSize: 18)),
-                onTap: _shareApp,
-              ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red, size: 32),
-                title: const Text(
-                  "تسجيل الخروج",
-                  style: TextStyle(fontSize: 18, color: Colors.red),
-                ),
-                onTap: _logout,
-              ),
-            ],
-          ),
-        ),
-      ),
     ),
   );
 }
 
 
-  String selectedSection = "بوستاتي";
 
-  final List<Map<String, dynamic>> posts = [
-    {"title": "منشور 1", "content": "هذا نص المنشور الأول.", "likes": 5, "image": "images/bas.jpeg"},
-    {"title": "منشور 2", "content": "هذا نص المنشور الثاني.", "likes": 8, "image": "images/bas.jpeg"},
-    {"title": "منشور 3", "content": "هذا نص المنشور الثالث.", "likes": 3, "image": "images/bas.jpeg"},
-  ];
+  // ================= FIRESTORE LAZY =================
+  Future<void> _loadPosts() async {
+    if (loadingPosts || user == null) return;
+    setState(() => loadingPosts = true);
 
-  final List<Map<String, dynamic>> marketPosts = [
-    {"title": "منتج 1", "price": "10 \$", "image": "images/bas.jpeg"},
-    {"title": "منتج 2", "price": "15 \$", "image": "images/bas.jpeg"},
-  ];
+    Query query = FirebaseFirestore.instance
+        .collection('posts')
+        .where('userId', isEqualTo: user!.uid)
+        .orderBy('createdAt', descending: true)
+        .limit(pageSize);
 
- /* void _showPostDetail(Map<String, dynamic> post) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => PostDetailPage(post: post, username: username)),
+    if (lastPostDoc != null) {
+      query = query.startAfterDocument(lastPostDoc!);
+    }
+
+    final snap = await query.get();
+    if (snap.docs.isNotEmpty) {
+      lastPostDoc = snap.docs.last;
+      userPosts.addAll(snap.docs);
+    }
+
+    setState(() => loadingPosts = false);
+  }
+
+  Future<void> _loadMarket() async {
+    if (loadingMarket || user == null) return;
+    setState(() => loadingMarket = true);
+
+    Query query = FirebaseFirestore.instance
+        .collection('market')
+        .where('userId', isEqualTo: user!.uid)
+        .orderBy('createdAt', descending: true)
+        .limit(pageSize);
+
+    if (lastMarketDoc != null) {
+      query = query.startAfterDocument(lastMarketDoc!);
+    }
+
+    final snap = await query.get();
+    if (snap.docs.isNotEmpty) {
+      lastMarketDoc = snap.docs.last;
+      marketPosts.addAll(snap.docs);
+    }
+
+    setState(() => loadingMarket = false);
+  }
+
+  // ================= EMPTY STATE =================
+  Widget _emptyState(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Column(
+        children: [
+          const Icon(Icons.image_not_supported, size: 80, color: Colors.grey),
+          const SizedBox(height: 12),
+          Text(text, style: const TextStyle(color: Colors.grey)),
+        ],
+      ),
     );
-  }*/
+  }
 
-  Widget _buildPostThumbnail(Map<String, dynamic> post) {
-    return GestureDetector(
-      //onTap: () => _showPostDetail(post),
-      child: Container(
-        width: 120,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          image: DecorationImage(
-            image: AssetImage(post['image']),
-            fit: BoxFit.cover,
+  // ================= GRID =================
+  Widget _buildGrid(List<DocumentSnapshot> items, VoidCallback onLoadMore) {
+    if (items.isEmpty) {
+      return _emptyState("لا يوجد عناصر بعد");
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: items.length + 1,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 4,
+        mainAxisSpacing: 4,
+      ),
+      itemBuilder: (_, i) {
+        if (i == items.length) {
+          onLoadMore();
+          return const Center(child: CircularProgressIndicator());
+        }
+        return CachedNetworkImage(
+          imageUrl: items[i]['imageUrl'],
+          fit: BoxFit.cover,
+        );
+      },
+    );
+  }
+
+  // ================= LOGOUT  =================
+  void _logout() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text("تسجيل الخروج"),
+        content: const Text("هل أنت متأكد؟"),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("إلغاء")),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _authService.signOut();
+              if (!mounted) return;
+              context.go('/login');
+            },
+            child: const Text("تسجيل الخروج",
+                style: TextStyle(color: Colors.red)),
           ),
+        ],
+      ),
+    );
+  }
+
+  // ================= SETTINGS =================
+  void _showSettings() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.notifications),
+            title: const Text("الإشعارات"),
+            onTap: openAppSettings,
+          ),
+          ListTile(
+            leading: const Icon(Icons.feedback),
+            title: const Text("فيدباك"),
+            onTap: () async {
+              final uri = Uri(
+                scheme: 'mailto',
+                path: adminEmail,
+                queryParameters: {'subject': 'Feedback'},
+              );
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri);
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.share),
+            title: const Text("أخبر أصدقائك"),
+            onTap: () => Share.share("جرب هذا التطبيق 🌱"),
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title:
+                const Text("تسجيل الخروج", style: TextStyle(color: Colors.red)),
+            onTap: _logout,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ================= UI =================
+  @override
+  Widget build(BuildContext context) {
+    if (appUser == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        body: SingleChildScrollView(
+          child: Column(
+  children: [
+    const SizedBox(height: 40),
+    Align(
+      alignment: Alignment.centerRight,
+      child: IconButton(
+        icon: const Icon(Icons.menu, size: 32),
+        onPressed: _showSettings,
+      ),
+    ),
+
+    // ===== HEADER =====
+    GestureDetector(
+      onTap: _openEditProfileDialog,
+      child: CircleAvatar(
+        radius: 75,
+        backgroundImage: appUser!.photoUrl.isNotEmpty
+            ? CachedNetworkImageProvider(appUser!.photoUrl)
+            : null,
+        child: appUser!.photoUrl.isEmpty
+            ? const Icon(Icons.person, size: 60)
+            : null,
+      ),
+    ),
+
+    const SizedBox(height: 16),
+    Text(appUser!.name,
+        style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+
+    Text('@${appUser!.username}',
+        style: const TextStyle(color: Colors.grey)),
+
+    if (appUser!.bio.isNotEmpty)
+      Padding(
+        padding: const EdgeInsets.all(8),
+        child: Text(appUser!.bio,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.grey)),
+      ),
+
+    OutlinedButton(
+      onPressed: _openEditProfileDialog,
+      child: const Text("تعديل الملف الشخصي"),
+    ),
+
+    const SizedBox(height: 20),
+
+    // ===== TABS =====
+    Row(
+      children: [
+        _tabButton("بوستاتي", "posts"),
+        _tabButton("الماركت", "market"),
+      ],
+    ),
+
+    AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      child: selectedTab == "posts"
+          ? _buildGrid(userPosts, _loadPosts)
+          : _buildGrid(marketPosts, _loadMarket),
+    ),
+  ],
+)
+
         ),
       ),
     );
   }
 
-  Widget _buildSectionTab(String title, String section) {
-    bool isSelected = selectedSection == section;
+  Widget _tabButton(String title, String value) {
+    final selected = selectedTab == value;
     return Expanded(
       child: GestureDetector(
-        onTap: () {
-          setState(() {
-            selectedSection = section;
-          });
-        },
+        onTap: () => setState(() => selectedTab = value),
         child: Container(
-          alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(vertical: 12),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.03),
             border: Border(
-              top: BorderSide(
-                color: isSelected ? Colors.green[700]! : Colors.transparent,
+              bottom: BorderSide(
+                color: selected ? Colors.green : Colors.transparent,
                 width: 3,
               ),
             ),
-            borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
             title,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: isSelected ? Colors.green[700] : Colors.black.withOpacity(0.6),
+              color: selected ? Colors.green : Colors.grey,
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    List<Map<String, dynamic>> currentPosts = selectedSection == "بوستاتي" ? posts : marketPosts;
-
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: Colors.grey[100],
-        body: Stack(
-          children: [
-            Positioned(
-              top: 50,
-              right: 10,
-              child: IconButton(
-                icon: const Icon(Icons.settings, color: Colors.green, size: 32),
-                onPressed: _showSettings,
-              ),
-            ),
-            Column(
-              children: [
-                const SizedBox(height: 110),
-                Center(
-                  child: Column(
-                    children: [
-                      GestureDetector(
-                        onTap: _changeProfileImage,
-                        child: CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.grey[300],
-                          backgroundImage: profileImage != null ? FileImage(profileImage!) : null,
-                          child: profileImage == null ? const Icon(Icons.camera_alt, size: 40) : null,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      GestureDetector(
-                        onTap: _changeUsername,
-                        child: Text(
-                          username,
-                          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                    ],
-                  ),
-                ),
-                Row(
-                  children: [
-                    _buildSectionTab("بوستاتي", "بوستاتي"),
-                    _buildSectionTab("الماركت", "الماركت"),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 140,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    children: currentPosts.map((post) => _buildPostThumbnail(post)).toList(),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/*class PostDetailPage extends StatelessWidget {
-  final Map<String, dynamic> post;
-  final String username;
-
-  const PostDetailPage({super.key, required this.post, required this.username});
-
-  @override
-  Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(title: Text(post['title']), backgroundColor: const Color(0xFF4B8A75)),
-        body: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("الاسم: $username", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: Image(
-                  image: AssetImage(post['image']),
-                  width: double.infinity,
-                  height: 200,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(post['content'], style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Icon(Icons.thumb_up, color: Colors.grey[700]),
-                  const SizedBox(width: 5),
-                  Text(post['likes'].toString()),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}*/
-
-class PrivacyPage extends StatelessWidget {
-  const PrivacyPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("سياسة الخصوصية"),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-        ),
-        body: const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text(
-            "نحن نحترم خصوصيتك ولا نقوم بجمع أي بيانات شخصية بدون إذنك. "
-                "المعلومات تستخدم فقط لتحسين تجربة المستخدم داخل التطبيق.",
-            style: TextStyle(fontSize: 16, height: 1.6),
           ),
         ),
       ),
     );
   }
 }
-/////////////////////////////////////////////////////////////

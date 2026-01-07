@@ -58,10 +58,11 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) => const Garden(),
         ),
         
-        GoRoute(
+     /*   GoRoute(
           path: '/community',
           builder: (context, state) => const CommunityPage(),
         ),
+        */
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfilePage(),

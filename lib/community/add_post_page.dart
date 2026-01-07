@@ -1,12 +1,15 @@
-import 'package:flutter/material.dart';
+/*import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../colors.dart';
 
 class AddPostPage extends StatefulWidget {
-  final Function(Map<String, dynamic>) onAddPost; //عشان اضافة المنشور 
+  final Function() onPostAdded; // لإعلام الصفحة الأم بأن منشور جديد أضيف
 
-  const AddPostPage({super.key, required this.onAddPost});
+  const AddPostPage({super.key, required this.onPostAdded});
 
   @override
   State<AddPostPage> createState() => _AddPostPageState();
@@ -15,6 +18,7 @@ class AddPostPage extends StatefulWidget {
 class _AddPostPageState extends State<AddPostPage> {
   final TextEditingController _contentController = TextEditingController();
   File? _selectedImage;
+  bool _isLoading = false;
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -26,26 +30,55 @@ class _AddPostPageState extends State<AddPostPage> {
     }
   }
 
-  void _submitPost() {
+  Future<void> _submitPost() async {
     if (_contentController.text.trim().isEmpty && _selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("أضف محتوى أو صورة أولاً")),
+        const SnackBar(content: Text("أضف نصًا أو صورة أولاً")),
       );
       return;
     }
 
-    // إنشاء منشور جديد
-    final newPost = {
-      'username': 'أنتِ 🌸',
-      'userImage': 'https://cdn-icons-png.flaticon.com/512/4333/4333609.png',
-      'content': _contentController.text.trim(),
-      'imageUrl': _selectedImage?.path ?? '',
-      'likes': 0,
-      'comments': 0,
-    };
+    setState(() => _isLoading = true);
 
-    widget.onAddPost(newPost); 
-    Navigator.pop(context);
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("يجب تسجيل الدخول للنشر")),
+      );
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    String imageUrl = '';
+    if (_selectedImage != null) {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('post_images')
+          .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await storageRef.putFile(_selectedImage!);
+      imageUrl = await storageRef.getDownloadURL();
+    }
+
+    await FirebaseFirestore.instance.collection('posts').add({
+      'username': user.displayName ?? 'مستخدم',
+      'userId': user.uid,
+      'userImage': user.photoURL,
+      'content': _contentController.text.trim(),
+      'imageUrl': imageUrl,
+      'likes': 0,
+      'comments': [],
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    widget.onPostAdded(); // تحديث الـCommunityPage
+
+    setState(() {
+      _isLoading = false;
+      _contentController.clear();
+      _selectedImage = null;
+    });
+
+    Navigator.pop(context); // العودة للصفحة السابقة
   }
 
   @override
@@ -110,13 +143,16 @@ class _AddPostPageState extends State<AddPostPage> {
               ),
             ),
             const SizedBox(height: 25),
-            ElevatedButton(
+            _isLoading
+                ? const CircularProgressIndicator(color: lavender)
+                : ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: lavender,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 50, vertical: 12),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 50, vertical: 12),
               ),
               onPressed: _submitPost,
               child: const Text(
@@ -129,4 +165,4 @@ class _AddPostPageState extends State<AddPostPage> {
       ),
     );
   }
-}
+}*/

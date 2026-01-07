@@ -7,51 +7,54 @@ class AuthService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // ================= REGISTER WITH EMAIL =================
- Future<User?> registerWithEmail({
-  required String name,
-  required String email,
-  required String password,
-}) async {
-  try {
-    // 1️⃣ التأكد أن اليوزرنيم غير مكرر
-    final usernameQuery = await _firestore
-        .collection('users')
-        .where('name', isEqualTo: name)
-        .limit(1)
-        .get();
+    Future<User?> registerWithEmail({
+      required String username,
+      required String email,
+      required String password,
+    }) async {
+      try {
+        // 1️⃣ التأكد أن اليوزرنيم غير مكرر
+        final usernameQuery = await _firestore
+            .collection('users')
+            .where('username', isEqualTo: username)
+            .limit(1)
+            .get();
 
-    if (usernameQuery.docs.isNotEmpty) {
-      throw 'اسم المستخدم مستخدم مسبقاً';
+        if (usernameQuery.docs.isNotEmpty) {
+          throw 'اسم المستخدم مستخدم مسبقاً';
+        }
+
+        // 2️⃣ إنشاء الحساب (Firebase Auth)
+        final cred = await _auth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+
+        final user = cred.user;
+        if (user == null) throw 'فشل إنشاء الحساب';
+
+        // 3️⃣ تخزين المستخدم في Firestore
+        await _firestore.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'username': username,         
+          'name': username,              
+          'email': email,
+          'provider': 'email',
+          'photoUrl': '',
+          'bio': '',
+          'points': 0,
+          'level': 1,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        return user;
+
+      } on FirebaseAuthException catch (e) {
+        throw _mapAuthError(e);
+      } catch (e) {
+        throw e.toString();
+      }
     }
-
-    // 2️⃣ إنشاء الحساب (Firebase Auth يتأكد من الإيميل)
-    final cred = await _auth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-
-    final user = cred.user;
-    if (user == null) {
-      throw 'فشل إنشاء الحساب';
-    }
-
-    // 3️⃣ تخزين المستخدم في Firestore
-    await _firestore.collection('users').doc(user.uid).set({
-      'uid': user.uid,
-      'name': name,
-      'email': email,
-      'provider': 'email',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-
-    return user;
-
-  } on FirebaseAuthException catch (e) {
-    throw _mapAuthError(e);
-  } catch (e) {
-    throw e.toString();
-  }
-}
 
 
   // ================= LOGIN WITH EMAIL =================
@@ -69,10 +72,6 @@ class AuthService {
         password: password,
       );
 
-      if (!cred.user!.emailVerified) {
-        await _auth.signOut();
-        throw 'يرجى تفعيل البريد الإلكتروني أولاً';
-      }
 
       final doc = await _firestore
           .collection('users')
@@ -127,7 +126,9 @@ class AuthService {
     if (!docSnapshot.exists) {
       await userDoc.set({
         'uid': user.uid,
-        'name': user.displayName ?? '',
+        'username': user.displayName?.replaceAll(' ', '_').toLowerCase() ?? 'user123', 
+        'name': user.displayName ?? user.displayName?.replaceAll(' ', '_') ?? 'user123',
+
         'email': user.email ?? '',
         'provider': 'google',
         'createdAt': FieldValue.serverTimestamp(),

@@ -252,7 +252,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       });
                       try {
                         final user = await _authService.registerWithEmail(
-                          name: _nameController.text.trim(),
+                          username: _nameController.text.trim(),
                           email: _emailController.text.trim(),
                           password: _passwordController.text.trim(),
                         );
