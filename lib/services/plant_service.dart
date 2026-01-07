@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../plant_model.dart';
+import '../models/plant_model.dart';
 
 class PlantService {
   final _db = FirebaseFirestore.instance;

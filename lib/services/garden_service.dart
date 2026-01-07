@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'plant_model.dart';
-import 'garden_plant_model.dart';
+import '../models/plant_model.dart';
+import '../models/garden_plant_model.dart';
 
 class GardenService {
   final _firestore = FirebaseFirestore.instance;

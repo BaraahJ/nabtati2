@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../colors.dart';
-import '../garden_service.dart';
-import '../garden_plant_model.dart';
+import '../../colors.dart';
+import '../services/garden_service.dart';
+import '../models/garden_plant_model.dart';
 
 class PlantsPage extends StatefulWidget {
   const PlantsPage({super.key});

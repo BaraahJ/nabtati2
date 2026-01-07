@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'auth_service.dart';
+import '../services/auth_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'dart:ui';
 

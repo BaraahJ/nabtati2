@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'plants_page.dart';
 import 'tasks_page.dart';
-import '../colors.dart';
+import '../../colors.dart';
 class Garden extends StatefulWidget {
   const Garden({super.key});
 

@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:nabtati/plantDesign.dart';
+import 'package:nabtati/plant/plantDesign.dart';
 
 import 'auth/welcomPage.dart';
 import 'auth/loginPage.dart';
 import 'auth/registerPage.dart';
-import 'homePage.dart';
+import 'home/homePage.dart';
 
-import 'plants_page.dart';
+import 'garden/plants_page.dart';
 import 'mygarden/plant_details_page.dart';
 
-import 'plant_model.dart';
-import 'garden.dart';
+import 'models/plant_model.dart';
+import 'garden/garden.dart';
 import 'mygarden/edit_plant_page.dart';
 
 import 'community/community_page.dart';
-import 'searchPage.dart';
-import 'profile.dart';
+import 'search/searchPage.dart';
+import 'profile/profile.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/welcome',
@@ -58,11 +58,11 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) => const Garden(),
         ),
         
-     /*   GoRoute(
+     /* GoRoute(
           path: '/community',
           builder: (context, state) => const CommunityPage(),
-        ),
-        */
+        ),*/
+        
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfilePage(),

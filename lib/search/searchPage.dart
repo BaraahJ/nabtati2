@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'plant_search_card.dart';
-import 'plant_service.dart';
-import 'plant_model.dart';
-import 'plantDesign.dart';
+import '../services/plant_service.dart';
+import '../models/plant_model.dart';
+import '../plant/plantDesign.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});

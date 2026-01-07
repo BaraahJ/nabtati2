@@ -10,10 +10,10 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'auth/auth_service.dart';
-import 'user_service.dart';
-import 'user_model.dart';
-import 'cloudinary_service.dart';
+import '../services/auth_service.dart';
+import '../services/user_service.dart';
+import '../models/user_model.dart';
+import '../services/cloudinary_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});

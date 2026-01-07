@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../plant_model.dart';
+import '../models/plant_model.dart';
 
 class PlantCard extends StatelessWidget {
   final Plant plant;

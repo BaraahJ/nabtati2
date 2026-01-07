@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'plant_model.dart';
-import 'garden_service.dart';
+import '../models/plant_model.dart';
+import '../services/garden_service.dart';
 
 class PlantDesign extends StatefulWidget {
   final Plant plant;
