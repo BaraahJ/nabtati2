@@ -1,15 +1,17 @@
-/*import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../../colors.dart';
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:extended_image/extended_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../services/post_service.dart';
+import '../../services/cloudinary_service.dart';
 
 class AddPostPage extends StatefulWidget {
-  final Function() onPostAdded; // لإعلام الصفحة الأم بأن منشور جديد أضيف
-
-  const AddPostPage({super.key, required this.onPostAdded});
+  const AddPostPage({super.key});
 
   @override
   State<AddPostPage> createState() => _AddPostPageState();
@@ -17,152 +19,228 @@ class AddPostPage extends StatefulWidget {
 
 class _AddPostPageState extends State<AddPostPage> {
   final TextEditingController _contentController = TextEditingController();
-  File? _selectedImage;
+  final PostService _postService = PostService();
+
+  File? _image;
   bool _isLoading = false;
 
-  Future<void> _pickImage() async {
+  final GlobalKey _repaintKey = GlobalKey();
+
+  /// اختيار صورة من الاستديو
+  Future<void> _pickFromGallery() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() {
-        _selectedImage = File(picked.path);
-      });
+    if (picked == null) return;
+
+    setState(() {
+      _image = File(picked.path);
+    });
+  }
+
+  /// التقاط صورة بالكاميرا
+  Future<void> _pickFromCamera() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.camera);
+    if (picked == null) return;
+
+    setState(() {
+      _image = File(picked.path);
+    });
+  }
+
+  /// التقاط الصورة النهائية (مثل إنستغرام)
+  Future<File?> _captureImage() async {
+    try {
+      final boundary = _repaintKey.currentContext!.findRenderObject()
+          as RenderRepaintBoundary;
+
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+
+      if (byteData == null) return null;
+
+      final pngBytes = byteData.buffer.asUint8List();
+      final file = File('${_image!.path}_final.png');
+      await file.writeAsBytes(pngBytes);
+
+      return file;
+    } catch (e) {
+      debugPrint(e.toString());
+      return null;
     }
   }
 
+  /// نشر البوست
   Future<void> _submitPost() async {
-    if (_contentController.text.trim().isEmpty && _selectedImage == null) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    if (_contentController.text.trim().isEmpty && _image == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("أضف نصًا أو صورة أولاً")),
+        const SnackBar(content: Text('اكتب شيئًا أو أضف صورة')),
       );
       return;
     }
 
     setState(() => _isLoading = true);
 
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("يجب تسجيل الدخول للنشر")),
+    try {
+      String imageUrl = '';
+
+      if (_image != null) {
+        final finalImage = await _captureImage();
+        if (finalImage != null) {
+          imageUrl = await CloudinaryService.uploadPost(finalImage);
+        }
+      }
+
+      await _postService.addPost(
+        _contentController.text.trim(),
+        imageUrl,
+        user.uid,
       );
-      setState(() => _isLoading = false);
-      return;
+
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     }
 
-    String imageUrl = '';
-    if (_selectedImage != null) {
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('post_images')
-          .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await storageRef.putFile(_selectedImage!);
-      imageUrl = await storageRef.getDownloadURL();
-    }
-
-    await FirebaseFirestore.instance.collection('posts').add({
-      'username': user.displayName ?? 'مستخدم',
-      'userId': user.uid,
-      'userImage': user.photoURL,
-      'content': _contentController.text.trim(),
-      'imageUrl': imageUrl,
-      'likes': 0,
-      'comments': [],
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-
-    widget.onPostAdded(); // تحديث الـCommunityPage
-
-    setState(() {
-      _isLoading = false;
-      _contentController.clear();
-      _selectedImage = null;
-    });
-
-    Navigator.pop(context); // العودة للصفحة السابقة
+    setState(() => _isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: background,
       appBar: AppBar(
         title: const Text(
-          'إضافة منشور جديد',
-          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: textColor),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color.fromARGB(255, 200, 210, 185).withOpacity(0.9),
-                const Color.fromARGB(255, 235, 213, 237).withOpacity(0.7),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
+          'إنشاء منشور',
+          style: TextStyle(fontFamily: 'Cairo'),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            TextField(
-              controller: _contentController,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'اكتب شيئًا عن نباتاتك...',
-                hintStyle: const TextStyle(color: Colors.grey),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              /// إطار الصورة + زر الكاميرا
+              Column(
+                children: [
+                  RepaintBoundary(
+                    key: _repaintKey,
+                    child: AspectRatio(
+                      aspectRatio: 4 / 5,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade400),
+                          color: Colors.grey[200], // لون فاتح للإطار
+                        ),
+                        child: _image == null
+                            ? GestureDetector(
+                                onTap: _pickFromGallery,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.add_photo_alternate_outlined,
+                                    size: 50,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              )
+                            : ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: ExtendedImage.file(
+                                  _image!,
+                                  fit: BoxFit.cover,
+                                  mode: ExtendedImageMode.gesture,
+                                  initGestureConfigHandler: (_) {
+                                    return GestureConfig(
+                                      minScale: 1.0,
+                                      maxScale: 4.0,
+                                      speed: 1.0,
+                                      inertialSpeed: 100.0,
+                                    );
+                                  },
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  /// زر التقاط صورة بالكاميرا
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _pickFromCamera,
+                      icon: const Icon(Icons.camera_alt),
+                      label: const Text('التقاط صورة بالكاميرا'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              /// نص البوست
+              TextField(
+                controller: _contentController,
+                maxLines: null,
+                decoration: InputDecoration(
+                  hintText: 'اكتب وصفًا للمنشور...',
+                  filled: true,
+                  fillColor: Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            if (_selectedImage != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: Image.file(
-                  _selectedImage!,
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+
+              const SizedBox(height: 24),
+
+              /// زر النشر
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _submitPost,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'نشر',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
-            const SizedBox(height: 10),
-            TextButton.icon(
-              onPressed: _pickImage,
-              icon: const Icon(Icons.image, color: lavender),
-              label: const Text(
-                "إضافة صورة",
-                style: TextStyle(color: lavender, fontSize: 16),
-              ),
-            ),
-            const SizedBox(height: 25),
-            _isLoading
-                ? const CircularProgressIndicator(color: lavender)
-                : ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: lavender,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 50, vertical: 12),
-              ),
-              onPressed: _submitPost,
-              child: const Text(
-                'نشر',
-                style: TextStyle(color: white, fontSize: 18),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
-}*/
+}

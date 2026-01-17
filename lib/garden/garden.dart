@@ -11,7 +11,7 @@ class Garden extends StatefulWidget {
 }
 
 class _GardenState extends State<Garden> {
-  int selectedIndex = 0;
+  int selectedIndex = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +72,7 @@ class _GardenState extends State<Garden> {
                   curve: Curves.easeInOut,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 226, 235, 225),
+                    color: const Color (0xFFF6FAF7),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(70),
                     ),
@@ -116,7 +116,7 @@ class _GardenState extends State<Garden> {
         style: GoogleFonts.tajawal(
           fontSize: isSelected ? 26 : 23,
           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
-          color: isSelected ? lavender : textColor.withOpacity(0.7),
+          color: isSelected ?  lavender:const Color.fromARGB(255, 104, 102, 104) ,
           letterSpacing: 0.5,
         ),
         child: Text(title),

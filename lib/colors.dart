@@ -14,3 +14,13 @@ const glassWhite = Colors.white70;
 
 const primaryDark = Color(0xFF4A2C4D); // خط + زر غامق
 Color primaryColor = Color(0xFFA2C6AD);
+
+
+class AppColors {
+  static const bg = Color(0xFFF6FBF9);
+  static const primary = Color(0xFF5CC6A9); // mint
+  static const secondary = Color(0xFF9AD9FF); // baby blue
+  static const textDark = Color(0xFF2E3A3A);
+  static const textLight = Color(0xFF8FA3A3);
+  static const divider = Color(0xFFE3F0ED);
+}

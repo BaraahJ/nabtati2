@@ -8,18 +8,22 @@ import 'auth/loginPage.dart';
 import 'auth/registerPage.dart';
 import 'home/homePage.dart';
 
+import 'garden/garden.dart';
 import 'garden/plants_page.dart';
-import 'mygarden/plant_details_page.dart';
+import 'garden/plant_details_page.dart';
 
 import 'models/plant_model.dart';
-import 'garden/garden.dart';
-import 'mygarden/edit_plant_page.dart';
+import 'models/garden_plant_model.dart';
 
 import 'community/community_page.dart';
 import 'search/searchPage.dart';
 import 'profile/profile.dart';
 
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
+
 final GoRouter appRouter = GoRouter(
+  navigatorKey: _rootNavigatorKey,
   initialLocation: '/welcome',
   routes: [
     // Welcome Page
@@ -40,6 +44,7 @@ final GoRouter appRouter = GoRouter(
 
     // Main nav bar
     ShellRoute(
+       navigatorKey: _shellNavigatorKey,
       builder: (context, state, child) {
         return Scaffold(
           body: child,
@@ -58,22 +63,16 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) => const Garden(),
         ),
         
-     /* GoRoute(
+      GoRoute(
           path: '/community',
-          builder: (context, state) => const CommunityPage(),
-        ),*/
+          builder: (context, state) => CommunityPage(),
+        ),
         
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfilePage(),
         ),
-       /* GoRoute(
-        path: '/garden/details',
-        builder: (context, state) {
-          final plant = state.extra as Plant;
-          return PlantDetailsPage(plant: plant,);
-        },
-        ),*/
+
        
           GoRoute(
             path: '/plantPage',
@@ -87,6 +86,14 @@ final GoRouter appRouter = GoRouter(
           path: '/searchPage',
           builder: (context, state) => const SearchPage(),
         ),
+
+            GoRoute(
+      path: '/garden/details',
+      builder: (context, state) {
+        final plant = state.extra as GardenPlant;
+        return PlantDetailsPage(plant: plant);
+      },
+    ),
       ],
     ),
   ],
@@ -123,7 +130,7 @@ class ModernBottomNavBar extends StatelessWidget {
         icon: Icons.groups_rounded,
         label: 'المجتمع',
         route: '/community',
-        color: const Color.fromARGB(255, 174, 158, 220),
+        color: const Color(0xFF42A5F5).withOpacity(0.4),
       ),
       NavItem(
         icon: Icons.person_rounded,

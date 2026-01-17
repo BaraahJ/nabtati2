@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nabtati/search/searchPage.dart';
-import 'package:nabtati/plantidentifierpage.dart';
+import 'package:nabtati/AI/PlantIdentifierPage.dart';
+
 
 class HomeContent extends StatefulWidget {
   final VoidCallback? onSearchPressed;

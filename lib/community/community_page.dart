@@ -1,11 +1,11 @@
-/*import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../colors.dart';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../services/post_service.dart';
+import 'post_card.dart';
+import '../market/market_page.dart';
 import 'add_post_page.dart';
-import 'comments_page.dart';
-import 'market.dart';
-import 'marketpost.dart';
+import '../market/add_market_post_page.dart';
+import 'package:nabtati/models/post_model.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -14,249 +14,260 @@ class CommunityPage extends StatefulWidget {
   State<CommunityPage> createState() => _CommunityPageState();
 }
 
-class _CommunityPageState extends State<CommunityPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _CommunityPageState extends State<CommunityPage> {
+  int selectedIndex = 0;
+  final PostService _postService = PostService();
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
+  // Soft pastel colors
+  static const bg = Color(0xFFF6FBF9);
+  static const primary = Color(0xFF5CC6A9); // mint
+  static const secondary = Color(0xFF9AD9FF); // baby blue
+  static const textDark = Color(0xFF2E3A3A);
+  static const textLight = Color(0xFF8FA3A3);
+  static const divider = Color(0xFFE3F0ED);
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  void _onAddPressed() {
+    if (selectedIndex == 0) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AddPostPage()),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AddMarketPostPage()),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: background,
-      appBar: AppBar(
-        title: const Text(
-          'المجتمع',
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
-        ),
-        centerTitle: true,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color.fromARGB(255, 200, 210, 185).withOpacity(0.9),
-                const Color.fromARGB(255, 235, 213, 237).withOpacity(0.7),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: textColor,
-          indicatorColor: lavender,
-          indicatorWeight: 3,
-          tabs: const [
-            Tab(text: 'المنشورات'),
-            Tab(text: 'السوق'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildPostsTab(),
-          const MarketPage(),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: lavender,
-        onPressed: () {
-          if (_tabController.index == 0) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => AddPostPage(
-                  onPostAdded: () {
-                    setState(() {});
-                  },
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        body: Column(
+          children: [
+            // Header area with Stack
+            Stack(
+              children: [
+                // صورة الخلفية
+                Image.asset(
+                  'assets/images/aaa.jpeg',
+                  width: double.infinity,
+                  height: 220, // ارتفاع أكبر للصورة
+                  fit: BoxFit.cover,
                 ),
-              ),
-            );
-          } else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const AddMarketPostPage(),
-              ),
-            );
-          }
-        },
-        child: const Icon(Icons.add, color: white),
-      ),
-    );
-  }
-
-  Widget _buildPostsTab() {
-    final currentUser = FirebaseAuth.instance.currentUser;
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('posts')
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final posts = snapshot.data!.docs;
-
-        if (posts.isEmpty) {
-          return const Center(
-            child: Text(
-              "لا توجد منشورات بعد",
-              style: TextStyle(fontSize: 18, color: Colors.grey),
-            ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(10),
-          itemCount: posts.length,
-          itemBuilder: (context, index) {
-            final post = posts[index];
-            final data = post.data() as Map<String, dynamic>;
-
-            final hasImage =
-                data['imageUrl'] != null && data['imageUrl'] != '';
-
-            final userId = currentUser?.uid;
-            final likedBy = List<String>.from(data['likedBy'] ?? []);
-            final isLiked =
-                userId != null && likedBy.contains(userId);
-
-            return Card(
-              color: white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              elevation: 4,
-              shadowColor: lavender.withOpacity(0.5),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+                
+                // التابات في آخر الصورة
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                    child: Row(
                       children: [
-                        CircleAvatar(
-                          radius: 22,
-                          backgroundImage:
-                          NetworkImage(data['userImage']),
+                        Expanded(
+                          child: _buildTab(
+                            icon: Icons.people_rounded,
+                            title: "المجتمع",
+                            isSelected: selectedIndex == 0,
+                            onTap: () => setState(() => selectedIndex = 0),
+                          ),
                         ),
-                        const SizedBox(width: 10),
-                        Text(
-                          data['username'] ?? 'مستخدم',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: textColor,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildTab(
+                            icon: Icons.store_rounded,
+                            title: "المتجر",
+                            isSelected: selectedIndex == 1,
+                            onTap: () => setState(() => selectedIndex = 1),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                  ),
+                ),
+              ],
+            ),
 
-                    if (hasImage)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(15),
-                        child: Image.network(data['imageUrl']),
-                      ),
-                    if (hasImage) const SizedBox(height: 10),
-
-                    Text(
-                      data['content'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: textColor,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: Icon(
-                                isLiked
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                color: lavender,
-                              ),
-                              onPressed: userId == null
-                                  ? null
-                                  : () async {
-                                if (isLiked) {
-                                  await post.reference.update({
-                                    'likedBy':
-                                    FieldValue.arrayRemove(
-                                        [userId]),
-                                    'likesCount':
-                                    FieldValue.increment(-1),
-                                  });
-                                } else {
-                                  await post.reference.update({
-                                    'likedBy':
-                                    FieldValue.arrayUnion(
-                                        [userId]),
-                                    'likesCount':
-                                    FieldValue.increment(1),
-                                  });
-                                }
-                              },
-                            ),
-                            Text('${data['likesCount'] ?? 0}'),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(
-                                Icons.comment_outlined,
-                                color: lavender,
-                              ),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        CommentsPage(
-                                            postId: post.id),
-                                  ),
-                                );
-                              },
-                            ),
-                            Text(
-                                '${data['commentsCount'] ?? 0}'),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
+            // Content
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 400),
+                switchInCurve: Curves.easeInOut,
+                switchOutCurve: Curves.easeInOut,
+                child: selectedIndex == 0
+                    ? _buildPostsTab(key: const ValueKey(1))
+                    : MarketPage(key: const ValueKey(2)),
+              ),
+            ),
+          ],
+        ),
+        floatingActionButton: Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              colors: [
+                const Color.fromARGB(255, 229, 151, 243),
+                const Color.fromARGB(255, 228, 153, 203).withOpacity(0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: primary.withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _onAddPressed,
+              borderRadius: BorderRadius.circular(20),
+              child: const Center(
+                child: Icon(
+                  Icons.add_rounded,
+                  size: 32,
+                  color: Colors.white,
                 ),
               ),
-            );
-          },
-        );
-      },
+            ),
+          ),
+        ),
+      ),
     );
   }
-}*/
+
+  Widget _buildTab({
+    required IconData icon,
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isSelected ? const Color.fromARGB(255, 40, 87, 95) : Colors.transparent,
+              width: 3,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? const Color.fromARGB(255, 16, 106, 106) : const Color.fromARGB(255, 72, 79, 79),
+              size: 26,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              title,
+              style: GoogleFonts.tajawal(
+                fontSize: 17,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                color: isSelected ? const Color.fromARGB(255, 16, 106, 106) : const Color.fromARGB(255, 88, 92, 92),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPostsTab({Key? key}) {
+    return Container(
+      key: key,
+      color: const Color.fromARGB(255, 237, 246, 249),
+      child: StreamBuilder<List<PostModel>>(
+        stream: _postService.getPosts(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return Center(
+              child: CircularProgressIndicator(
+                color: const Color.fromARGB(255, 230, 206, 235),
+                strokeWidth: 3,
+              ),
+            );
+          }
+
+          final posts = snapshot.data!;
+          if (posts.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.only(top: 16, bottom: 90),
+            itemCount: posts.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 16),
+            itemBuilder: (_, i) => PostCard(post: posts[i]),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  primary.withOpacity(0.15),
+                  secondary.withOpacity(0.1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 70,
+              color: primary,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            'لا توجد منشورات بعد',
+            style: GoogleFonts.tajawal(
+              fontSize: 22,
+              color: textDark,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              'كن أول من يبدأ المحادثة!\nشارك أفكارك وتجاربك مع المجتمع',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.tajawal(
+                fontSize: 15,
+                color: textLight,
+                height: 1.6,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
