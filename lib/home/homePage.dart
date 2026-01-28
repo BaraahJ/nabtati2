@@ -1,7 +1,13 @@
+import'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nabtati/search/searchPage.dart';
 import 'package:nabtati/AI/PlantIdentifierPage.dart';
+
+import '../AI/DiagnosisPage.dart';
+import '../models/user_model.dart';
+import '../services/user_service.dart';
+import 'NotificationsPage.dart';
 
 
 class HomeContent extends StatefulWidget {
@@ -14,175 +20,222 @@ class HomeContent extends StatefulWidget {
 }
 
 class _HomeContentState extends State<HomeContent> {
-  int earnedPoints = 15;
-  final int totalPoints = 50;
-
-  void addPoints() {
-    setState(() {
-      if (earnedPoints < totalPoints) {
-        earnedPoints += 5;
-      }
-    });
+  AppUser? user; // معدل: بدنا نحتفظ بالمستخدم الحالي
+  int earnedPoints = 0;
+  final int totalPoints = 100;
+  final int maxAttempts = 5;
+  void initState() {
+    super.initState();
+    _loadUser();
   }
 
-  void resetPoints() {
-    setState(() {
-      earnedPoints = 0;
-    });
+// Stream real-time للمستخدم
+  void _loadUser() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      UserService().streamUser(uid).listen((u) {
+        setState(() {
+          user = u;
+          earnedPoints = u?.points ?? 0; // تحديث النقاط تلقائي
+        });
+      });
+    }
   }
+
 
   @override
- @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    
-    appBar: AppBar(
-      backgroundColor: Color.fromARGB(255, 82, 125, 117) ,
-      toolbarHeight: 5,
-    ),
-    backgroundColor: const Color.fromARGB(255, 82, 125, 117), // نفس لون التوب بار
-    body: Column(
-      children: [
-        Container(
-  height: 50,
-  padding: const EdgeInsets.symmetric(horizontal: 25),
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.start, // push to right
-    children: [
-      Image.asset(
-        'assets/images/FINAL-Photoroom.png',
-        height: 40,
-        fit: BoxFit.contain,
+  Widget build(BuildContext context) {
+    return Scaffold(
+
+      appBar: AppBar(
+        backgroundColor: Color.fromARGB(255, 82, 125, 117) ,
+        toolbarHeight: 5,
       ),
-    ],
-  ),
-),
-
-       
-        // Scrollable Content inside a "white card" with curved left
-        Expanded(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Container(
-              // Card-like background
-              decoration: const BoxDecoration(
-                color: Color.fromARGB(255, 255, 255, 255),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(100), // منحني من اليسار
-                  
+      backgroundColor: const Color.fromARGB(255, 82, 125, 117), // نفس لون التوب بار
+      body: Column(
+        children: [
+          Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 25),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start, // push to right
+              children: [
+                Image.asset(
+                  'assets/images/FINAL-Photoroom.png',
+                  height: 40,
+                  fit: BoxFit.contain,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey, 
-                    blurRadius: 10, 
-                    offset: Offset(-2, 2)
-                  )
-                ],
-              ),
-              padding: const EdgeInsets.only(bottom: 100, top: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 25),
-                    child: GreetingWidget(),
-                  ),
-                  PointsCard(
-                    totalPoints: totalPoints,
-                    earnedPoints: earnedPoints,
-                  ),
-
-                  // TEST BUTTONS
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: addPoints,
-                          icon: const Icon(Icons.add),
-                          label: const Text("أضف نقاط (+5)"),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton.icon(
-                          onPressed: resetPoints,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text("إعادة تعيين"),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ],
+                SizedBox(width: 200,),
+                 Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 30),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const NotificationsPage()),
+                        );
+                      },
                     ),
+                    Positioned(
+                      left: 12,
+                      top: 12,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                        constraints: const BoxConstraints(minWidth: 8, minHeight: 8),
+                      ),
+                    )
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+
+          // Scrollable Content inside a "white card" with curved left
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Container(
+                // Card-like background
+                decoration: const BoxDecoration(
+                  color: Color.fromARGB(255, 255, 255, 255),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(100), // منحني من اليسار
+
                   ),
-
-                  const SizedBox(height: 30),
-
-                  // Buttons
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      children: [
-                        buildBox(
-                          icon: Icons.search,
-                          label: "بحث عن نبتة",
-                          color: Colors.white,
-                          iconColor: const Color.fromARGB(255, 126, 165, 164),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => SearchPage(),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        buildBox(
-                          icon: Icons.bug_report,
-                          label: "تشخيص الأمراض",
-                          color: Colors.white,
-                          iconColor: const Color.fromARGB(255, 109, 171, 100),
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("تشخيص أمراض النباتات")),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        buildBox(
-                          icon: Icons.camera_alt,
-                          label: "تعرّف على نبتة",
-                          color: Colors.white,
-                          iconColor: const Color.fromARGB(255, 158, 131, 174),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PlantIdentifierPage(),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                      ],
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.grey,
+                        blurRadius: 10,
+                        offset: Offset(-2, 2)
+                    )
+                  ],
+                ),
+                padding: const EdgeInsets.only(bottom: 100, top: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 25),
+                      child: GreetingWidget(),
                     ),
-                  ),
-                  const SizedBox(height: 30),
-                ],
+                    PointsCard(
+                      totalPoints: totalPoints,
+                      earnedPoints: earnedPoints,
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Buttons
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: [
+                          buildBox(
+                            icon: Icons.search,
+                            label: "بحث عن نبتة",
+                            color: Colors.white,
+                            iconColor: const Color.fromARGB(255, 126, 165, 164),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SearchPage(),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          buildBox(
+                            icon: Icons.bug_report,
+                            label: "تشخيص الأمراض",
+                            color: Colors.white,
+                            iconColor: const Color.fromARGB(255, 109, 171, 100),
+                            //هون
+                            onTap: () async {
+                              final attempts = user?.identifyAttempts ?? 0;
+
+                              if (earnedPoints < totalPoints) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("🔒 يجب أن تصل نقاطك إلى 100 لتفعيل التعرف أو التشخيص"),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              if (attempts >= maxAttempts) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("🚫 لقد وصلت الحد الأقصى لمحاولات التعرف (5)"),
+                                  ),
+                                );
+                                return;
+                              }
+                              await UserService().decrementIdentifyAttempts(user!.uid);
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => DiagnosisPage(),
+                                ),
+                              );
+                            },
+
+                          ),
+                          const SizedBox(height: 16),
+                          buildBox(
+                            icon: Icons.camera_alt,
+                            label: "تعرّف على نبتة",
+                            color: Colors.white,
+                            iconColor: const Color.fromARGB(255, 158, 131, 174),
+                            //هون
+                            onTap: () async {
+                              final attempts = user?.identifyAttempts ?? 0;
+
+                              if (earnedPoints < totalPoints) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("🔒 يجب أن تصل نقاطك إلى 100 لتفعيل التعرف أو التشخيص"),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              if (attempts >= maxAttempts) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("🚫 لقد وصلت الحد الأقصى لمحاولات التعرف (5)"),
+                                  ),
+                                );
+                                return;
+                              }
+                              await UserService().decrementIdentifyAttempts(user!.uid);
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>PlantIdentifierPage(renderBaseUrl: "https://plant-id-api.onrender.com",),
+                                ),
+                              );
+                            },
+
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
 
 }

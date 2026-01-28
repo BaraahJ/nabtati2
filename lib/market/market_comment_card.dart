@@ -88,6 +88,7 @@ class _MarketCommentCardState extends State<MarketCommentCard> {
                             await service.deleteComment(
                               postId: widget.postId,
                               commentId: widget.comment.id,
+                              uid: widget.comment.userId,
                             );
                           },
                           itemBuilder: (_) => const [

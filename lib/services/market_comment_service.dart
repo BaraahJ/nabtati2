@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/comment_model.dart';
 import '../models/reply_model.dart';
-
+import 'package:nabtati/services/user_Service.dart';
 class MarketCommentService {
   final _firestore = FirebaseFirestore.instance;
 
@@ -40,6 +40,7 @@ class MarketCommentService {
     await postRef.update({
       'commentsCount': FieldValue.increment(1),
     });
+    await UserService().addPoints(uid: userId, points: 2);
   }
 
   Stream<List<ReplyModel>> getReplies(
@@ -85,6 +86,7 @@ class MarketCommentService {
     await ref.update({
       'repliesCount': FieldValue.increment(1),
     });
+    await UserService().addPoints(uid: userId, points: 1);
   }
 
   Future<void> toggleLikeComment({
@@ -103,6 +105,11 @@ class MarketCommentService {
           ? FieldValue.arrayRemove([uid])
           : FieldValue.arrayUnion([uid]),
     });
+    if (isLiked) {
+      await UserService().removePoints(uid, 1);
+    } else {
+      await UserService().addPoints(uid: uid, points: 1);
+    }
   }
 
   Future<void> toggleReplyLike({
@@ -124,12 +131,18 @@ class MarketCommentService {
         ? FieldValue.arrayRemove([uid])
         : FieldValue.arrayUnion([uid]),
   });
+  if (isLiked) {
+      await UserService().removePoints(uid, 1);
+    } else {
+      await UserService().addPoints(uid: uid, points: 1);
+    }
 }
 
 
   Future<void> deleteComment({
     required String postId,
     required String commentId,
+    required String uid ,
   }) async {
     final postRef =
         _firestore.collection('market_posts').doc(postId);
@@ -139,12 +152,14 @@ class MarketCommentService {
     await postRef.update({
       'commentsCount': FieldValue.increment(-1),
     });
+    await UserService().removePoints(uid, 2);
   }
 
   Future<void> deleteReply({
     required String postId,
     required String commentId,
     required String replyId,
+    required String uid ,
   }) async {
     final ref = _firestore
         .collection('market_posts')
@@ -157,5 +172,6 @@ class MarketCommentService {
     await ref.update({
       'repliesCount': FieldValue.increment(-1),
     });
+    await UserService().removePoints(uid, 1);
   }
 }

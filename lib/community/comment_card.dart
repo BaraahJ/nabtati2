@@ -118,6 +118,7 @@ class _CommentCardState extends State<CommentCard> {
                               await CommentService().deleteComment(
                                 postId: widget.postId,
                                 commentId: widget.comment.id,
+                                uid: widget.comment.userId,
                               );
                             },
                             itemBuilder: (context) => [

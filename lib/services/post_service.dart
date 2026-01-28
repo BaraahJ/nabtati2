@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nabtati/services/user_service.dart';
 import '../models/post_model.dart';
+
 
 class PostService {
   final _postsRef = FirebaseFirestore.instance.collection('posts');
@@ -16,6 +18,7 @@ class PostService {
       }).toList();
     });
   }
+  
 
   Future<void> addPost(
     String content,
@@ -30,9 +33,14 @@ class PostService {
       'likes': [],
       'commentsCount': 0,
     });
+    await UserService().addPoints(uid: userId, points: 10);
   }
-
-  Future<void> deletePost(String postId) async {
+  
+  Future<void> deletePost({
+    required String postId,
+    required String userId,
+  }) async {
     await _postsRef.doc(postId).delete();
+    await UserService().removePoints(userId, 10);
   }
 }

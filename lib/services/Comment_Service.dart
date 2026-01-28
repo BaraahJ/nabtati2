@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/comment_model.dart';
 import '../models/reply_model.dart';
+import 'package:nabtati/services/user_service.dart';
 
 class CommentService {
   final _firestore = FirebaseFirestore.instance;
@@ -43,6 +44,8 @@ Future<void> addComment({
   await postRef.update({
     'commentsCount': FieldValue.increment(1),
   });
+
+  await UserService().addPoints(uid: userId, points: 2);
 }
 
 
@@ -89,6 +92,7 @@ Future<void> addComment({
     await ref.update({
       'repliesCount': FieldValue.increment(1),
     });
+    await UserService().addPoints(uid: userId, points: 1);
   }
   // لايك / أنلايك
 Future<void> toggleLikeComment({
@@ -108,6 +112,12 @@ Future<void> toggleLikeComment({
         ? FieldValue.arrayRemove([uid])
         : FieldValue.arrayUnion([uid]),
   });
+
+  if (isLiked) {
+      await UserService().removePoints(uid, 2);
+    } else {
+      await UserService().addPoints(uid: uid, points: 2);
+    }
 }
 
 Future<void> toggleReplyLike({
@@ -130,6 +140,13 @@ Future<void> toggleReplyLike({
         ? FieldValue.arrayRemove([uid])
         : FieldValue.arrayUnion([uid]),
   });
+
+    if (isLiked) {
+      await UserService().removePoints(uid, 2);
+    } else {
+      await UserService().addPoints(uid: uid, points: 2);
+    }
+
 }
 Future<void> deleteReply({
   required String postId,
@@ -158,6 +175,7 @@ Future<void> deleteReply({
 Future<void> deleteComment({
   required String postId,
   required String commentId,
+  required String uid,
 }) async {
   final postRef =
       FirebaseFirestore.instance.collection('posts').doc(postId);
@@ -170,6 +188,8 @@ Future<void> deleteComment({
   await postRef.update({
     'commentsCount': FieldValue.increment(-1),
   });
+
+  await UserService().removePoints( uid, 2);
 }
 
 

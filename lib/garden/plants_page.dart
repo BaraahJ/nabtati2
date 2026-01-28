@@ -27,17 +27,7 @@ class _PlantsPageState extends State<PlantsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           /// العنوان
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5),
-            child: Text(
-              "حديقتي الصغيرة 🌸",
-              style: GoogleFonts.tajawal(
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-                color: textColor,
-              ),
-            ),
-          ),
+
 
           const SizedBox(height: 15),
 

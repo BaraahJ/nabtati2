@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nabtati/AI/DiagnosisPage.dart';
 import '../AI/PlantIdentifierPage.dart';
 import '../services/garden_service.dart';
 import '../models/plant_note_model.dart';
@@ -562,7 +563,7 @@ class _PlantDetailsPageState extends State<PlantDetailsPage>
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => PlantIdentifierPage(),
+                  builder: (_) => DiagnosisPage(),
                 ),
               );
             },
@@ -634,37 +635,43 @@ Widget _buildCareTab() {
 }
 
   // ================= DELETE =================
-  void _confirmDeletePlant(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("تأكيد الحذف"),
-        content: const Text("هل أنت متأكد من حذف هذه النبتة؟"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("إلغاء"),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
+ void _confirmDeletePlant(BuildContext pageContext) {
+  showDialog(
+    context: pageContext,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text("تأكيد الحذف"),
+      content: const Text("هل أنت متأكد من حذف هذه النبتة؟"),
+      actions: [
+        TextButton(
+          onPressed: () {
+            // ✅ بس سكّر الديالوق
+            Navigator.of(dialogContext).pop();
+          },
+          child: const Text("إلغاء"),
+        ),
+        TextButton(
+          onPressed: () async {
+            // ✅ سكّر الديالوق أولاً
+            Navigator.of(dialogContext).pop();
 
-              await FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(FirebaseAuth.instance.currentUser!.uid)
-                  .collection('garden')
-                  .doc(widget.plant.id)
-                  .delete();
+            // ✅ احذف
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(FirebaseAuth.instance.currentUser!.uid)
+                .collection('garden')
+                .doc(widget.plant.id)
+                .delete();
 
-              Navigator.pop(context);
-            },
-            child:
-                const Text("حذف", style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
+            // ✅ بعد الحذف سكّر صفحة التفاصيل
+            if (!mounted) return;
+            Navigator.of(pageContext).pop();
+          },
+          child: const Text("حذف", style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    ),
+  );
+}
 
   // ================= UI HELPERS =================
   Widget _buildInfoCard(

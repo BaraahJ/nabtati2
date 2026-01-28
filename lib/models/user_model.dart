@@ -1,7 +1,7 @@
 class AppUser {
   final String uid;
-  final String username; // ❗ ثابت
-  final String name;     // ✅ قابل للتغيير
+  final String username; 
+  final String name;     
   final String email;
   final String provider;
 
@@ -10,6 +10,10 @@ class AppUser {
 
   final int points;
   final int level;
+   
+  final int identifyAttempts;
+  final int diagnoseAttempts;
+  
 
   AppUser({
     required this.uid,
@@ -21,12 +25,14 @@ class AppUser {
     required this.bio,
     required this.points,
     required this.level,
+    required this.identifyAttempts,
+    required this.diagnoseAttempts,
   });
 
   factory AppUser.fromFirestore(Map<String, dynamic> data) {
     return AppUser(
       uid: data['uid'],
-      username: data['username'] ?? '', // username ثابت
+      username: data['username'] ?? '', 
       name: data['name'] ?? '',
       email: data['email'] ?? '',
       provider: data['provider'] ?? '',
@@ -34,13 +40,15 @@ class AppUser {
       bio: data['bio'] ?? '',
       points: data['points'] ?? 0,
       level: data['level'] ?? 1,
+      identifyAttempts: data['identifyAttempts'] ?? 0,
+      diagnoseAttempts: data['diagnoseAttempts'] ?? 0,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
-      'username': username, // مهم
+      'username': username, 
       'name': name,
       'email': email,
       'provider': provider,
@@ -48,6 +56,8 @@ class AppUser {
       'bio': bio,
       'points': points,
       'level': level,
+      'identifyAttempts': identifyAttempts,
+      'diagnoseAttempts': diagnoseAttempts,
     };
   }
 }

@@ -62,7 +62,7 @@ class _MarketPostCardState extends State<MarketPostCard> {
         title: const Text('حذف الإعلان'),
         onTap: () async {
           Navigator.pop(context);
-          await MarketService().deletePost(widget.post.id);
+          await MarketService().deletePost(widget.post.id, widget.post.userId); 
         },
       ),
     );
@@ -134,7 +134,7 @@ class _MarketPostCardState extends State<MarketPostCard> {
           ),
 
           /// 🏷️ FLAGS (CITY + CATEGORY)
-/// 🏷️ FLAGS + 💰 PRICE
+
 Padding(
   padding: const EdgeInsets.symmetric(horizontal: 12),
   child: Row(

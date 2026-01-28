@@ -37,6 +37,7 @@ class _AddMarketPostPageState extends State<AddMarketPostPage> {
     'جنين',
     'طولكرم',
     'قلقيلية',
+    ''
   ];
 
   final categories = [
@@ -141,14 +142,21 @@ TextField(
           const SizedBox(height: 12),
 
           /// 📍 المدينة
-          DropdownButtonFormField<String>(
-            value: city,
-            items: cities
-                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                .toList(),
-            onChanged: (v) => setState(() => city = v!),
-            decoration: const InputDecoration(labelText: 'المدينة'),
-          ),
+         DropdownButtonFormField<String>(
+  value: city,
+  isExpanded: true, // ← مهم جداً
+  menuMaxHeight: 300, // ← يعطي مساحة كافية
+  items: cities
+      .where((c) => c.trim().isNotEmpty)
+      .map((c) => DropdownMenuItem(
+            value: c,
+            child: Text(c),
+          ))
+      .toList(),
+  onChanged: (v) => setState(() => city = v!),
+  decoration: const InputDecoration(labelText: 'المدينة'),
+),
+
 
           const SizedBox(height: 12),
 

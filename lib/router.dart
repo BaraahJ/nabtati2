@@ -18,6 +18,7 @@ import 'models/garden_plant_model.dart';
 import 'community/community_page.dart';
 import 'search/searchPage.dart';
 import 'profile/profile.dart';
+import 'AI/DiagnosisPage.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();

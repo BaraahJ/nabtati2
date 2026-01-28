@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/market_post_model.dart';
+import 'package:nabtati/services/user_Service.dart';
 
 class MarketService {
   final _ref = FirebaseFirestore.instance.collection('market_posts');
@@ -36,10 +37,16 @@ class MarketService {
       'commentsCount': 0,
       'createdAt': FieldValue.serverTimestamp(),
     });
+    await UserService().addPoints(uid: userId, points: 10);//هون
   }
 
-  Future<void> deletePost(String postId) async {
+  Future<void> deletePost(
+    String postId,
+    String uid,
+  ) async {
+    
     await _ref.doc(postId).delete();
+    await UserService().removePoints(uid, 10);
   }
 
   Future<void> toggleLike({
@@ -52,6 +59,11 @@ class MarketService {
           ? FieldValue.arrayRemove([uid])
           : FieldValue.arrayUnion([uid]),
     });
+    if (isLiked) {
+      await UserService().removePoints(uid, 2);
+    } else {
+      await UserService().addPoints(uid: uid, points: 2);
+    }
   }
 
 
@@ -73,6 +85,11 @@ Future<void> toggleLikeComment({
         ? FieldValue.arrayRemove([uid])
         : FieldValue.arrayUnion([uid]),
   });
+  if (isLiked) {
+      await UserService().removePoints(uid, 2);
+    } else {
+      await UserService().addPoints(uid: uid, points: 2);
+    }
 }
 
 // لايك / أنلايك رد
@@ -96,6 +113,11 @@ Future<void> toggleReplyLike({
         ? FieldValue.arrayRemove([uid])
         : FieldValue.arrayUnion([uid]),
   });
+  if (isLiked) {
+      await UserService().removePoints(uid, 2);
+    } else {
+      await UserService().addPoints(uid: uid, points: 2);
+    }
 }
 
   

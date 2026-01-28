@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+
 class PostCard extends StatefulWidget {
   final PostModel post;
 
@@ -36,17 +37,22 @@ class _PostCardState extends State<PostCard> {
   static const textLight = Color(0xFF8FA3A3);
   static const divider = Color(0xFFE3F0ED);
 
+
+
+
   @override
   void initState() {
     super.initState();
     _loadUser();
   }
+  
 
   Future<void> _loadUser() async {
     final user = await _userService.getUser(widget.post.ownerId);
     if (!mounted) return;
     setState(() => _owner = user);
   }
+
 void _toggleLike() async {
   final postRef =
       FirebaseFirestore.instance.collection('posts').doc(widget.post.id);
@@ -54,11 +60,14 @@ void _toggleLike() async {
   if (isLiked) {
     await postRef.update({
       'likes': FieldValue.arrayRemove([currentUid]),
+      
     });
+    await UserService().removePoints(currentUid, 2);
   } else {
     await postRef.update({
       'likes': FieldValue.arrayUnion([currentUid]),
     });
+    await UserService().addPoints(uid: currentUid, points: 2);
   }
 }
 
@@ -90,7 +99,7 @@ void _toggleLike() async {
 
     if (confirm != true) return;
 
-    await _postService.deletePost(widget.post.id);
+    await _postService.deletePost(postId: widget.post.id, userId: currentUid);//هون
   }
 
   String _formatTimestamp(Timestamp? timestamp) {

@@ -13,4 +13,11 @@ class PlantService {
       },
     );
   }
+
+
+  Future<Plant?> getPlantById(String id) async {
+    final doc = await _db.collection('plants').doc(id).get();
+    if (!doc.exists) return null;
+    return Plant.fromFirestore(doc.data()!, doc.id);
+    }
 }

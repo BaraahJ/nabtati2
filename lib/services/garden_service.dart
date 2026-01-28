@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/plant_model.dart';
 import '../models/garden_plant_model.dart';
 import '../models/plant_note_model.dart';
+import 'package:nabtati/services/user_service.dart';
 
 class GardenService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -66,6 +67,7 @@ class GardenService {
       type: "pruning",
       frequencyDays: plant.pruning.frequencyDays,
     );
+    await UserService().addPoints(uid: _uid, points: 5);
   }
 
   //// 🔴 ADDED — دالة إنشاء مهمة
@@ -89,6 +91,7 @@ class GardenService {
       'doneAt': null,
       'createdAt': FieldValue.serverTimestamp(),
     });
+    
   }
 
   // ================= GET GARDEN PLANTS =================

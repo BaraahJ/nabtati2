@@ -104,6 +104,7 @@ class _MarketReplyCardState extends State<MarketReplyCard> {
           postId: widget.postId,
           commentId: widget.commentId,
           replyId: widget.reply.id,
+          uid: widget.reply.userId,
         );
       },
       child: Padding(
